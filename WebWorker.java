@@ -20,6 +20,7 @@
 *
 **/
 
+import java.nio.file.Files;
 import java.net.Socket;
 import java.lang.Runnable;
 import java.io.*;
@@ -32,6 +33,7 @@ public class WebWorker implements Runnable
 {
 
 private Socket socket;
+String fileType;
 
 /**
 * Constructor: must have a valid open socket
@@ -57,8 +59,15 @@ public void run()
       //Retrieve User Requested URL for later methods.
       String input;
       input = readHTTPRequest(is);
-
-      writeHTTPHeader(os,"text/html", input);
+      if(input.endsWith(".jpg"))
+         fileType = "image/jpg";
+      else if (input.endsWith(".gif"))
+         fileType = "image/gif";
+      else if(input.endsWith(".png"))
+         fileType = "image/png";
+      else
+         fileType = "text/html";
+      writeHTTPHeader(os,fileType, input);
       writeContent(os, input);
       os.flush();
       socket.close();
@@ -161,7 +170,10 @@ private void writeContent(OutputStream os, String input) throws Exception
    if(x.exists() && !x.isDirectory()){
       FileInputStream stream = new FileInputStream(input);
       BufferedReader r = new BufferedReader(new InputStreamReader(stream));
-
+      
+      if(fileType.startsWith("image/"))
+         Files.copy(x.toPath(), os);
+      else{
       String filex;
       //Reading file
       while ((filex = r.readLine()) != null){
@@ -179,6 +191,7 @@ private void writeContent(OutputStream os, String input) throws Exception
          os.write(filex.getBytes());
       }
       r.close();
+      }
    }
    //else if file does not exist, display "404 Error"
    else{
